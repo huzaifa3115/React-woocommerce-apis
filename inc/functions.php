@@ -269,6 +269,9 @@ function getAllCategories()
             $is_banner = get_term_meta($pterm->term_id, 'is_banner', true);
             $parent->is_banner = $is_banner != "" ?  true : false;
 
+            $is_menu = get_term_meta($pterm->term_id, 'is_menu', true);
+            $parent->is_menu = $is_menu != "" ?  true : false;
+
             $thumbnail_id = get_woocommerce_term_meta($pterm->term_id, 'thumbnail_id', true);
             $image = wp_get_attachment_url($thumbnail_id);
             $parent->image = $image;
@@ -521,12 +524,23 @@ function getProductsByKeyword(WP_REST_Request $request)
             throw new Exception("Invalid Query");
         }
 
+        $price_filter = $request->get_param('price_filter');
+
         $args = array(
             'post_type'             => 'product',
             'post_status'           => 'publish',
             'posts_per_page'        => -1,
             's' => $query
         );
+
+        if (
+            $price_filter &&
+            !empty($price_filter)
+        ) {
+            $args['orderby'] = 'meta_value_num';
+            $args['meta_key'] = '_price';
+            $args['order'] = $price_filter === 'low' ? 'ASC' : 'DESC';
+        }
 
         $filters = get_posts($args);
 
