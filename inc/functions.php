@@ -435,21 +435,42 @@ function getBestSellingProduct(WP_REST_Request $request)
 function getProductsDetail(WP_REST_Request $request)
 {
     try {
-        $product_id = $request->get_param('id');
-        if (!$product_id || $product_id === "") {
+        $slug = $request->get_param('slug');
+        if (!$slug || $slug === "") {
             throw new Exception("Invalid Query");
         }
 
-        $__product = new WC_product($product_id);
+        $product_obj = get_page_by_path($slug, OBJECT, 'product');
+        if (!$product_obj) {
+            throw new Exception("Product Not Found");
+        }
+
+        $product_id = $product_obj->ID;
+
+        $__product = get_product($product_id);
 
         $product = (object) [];
         $product->id = (int) $product_id;
         $product->title = $__product->name;
+        $product->slug = $__product->slug;
+        $product->type = $__product->product_type;
         $product->is_sale = $__product->is_on_sale();
-        $product->sale_price = $__product->get_sale_price();
-        $product->price = $__product->get_regular_price();
         $product->short_description = $__product->get_short_description();
         $product->description = $__product->get_description();
+
+        $variations = null;
+
+        // check product type
+        if ($__product->is_type('variable')) {
+            $product->sale_price = $__product->get_variation_sale_price('min', true);
+            $product->price = $__product->get_variation_regular_price('max', true);
+            $variations =  $__product->get_available_variations();
+        } else {
+            $product->sale_price = $__product->get_sale_price();
+            $product->price = $__product->get_regular_price();
+        }
+
+        $product->available_variations = $variations;
 
         $image = wp_get_attachment_url(get_post_thumbnail_id($product_id));
         $product->image = $image ? $image : 'https://api.urbanshop.pk/wp-content/uploads/woocommerce-placeholder-150x150.png';

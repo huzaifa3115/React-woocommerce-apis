@@ -66,7 +66,7 @@ function register_api_hooks()
 
     register_rest_route(
         'api',
-        '/product/(?P<id>\d+)/',
+        '/product/(?P<slug>[a-zA-Z0-9-]+)/',
         array(
             'methods' => 'GET',
             'callback' => 'getProductsDetail',
