@@ -472,19 +472,61 @@ function getProductsDetail(WP_REST_Request $request)
         $product->short_description = $__product->get_short_description();
         $product->description = $__product->get_description();
 
-        $variations = null;
+        $product_variations = null;
+        $attributes = null;
 
         // check product type
         if ($__product->is_type('variable')) {
             $product->sale_price = $__product->get_variation_sale_price('min', true);
             $product->price = $__product->get_variation_regular_price('max', true);
             $variations =  $__product->get_available_variations();
+            $attributes =  $__product->get_attributes();
+
+            $variationsArray = array();
+            foreach ($attributes as $attr => $attr_deets) {
+                $variationArray = array();
+                
+                $attribute_label = wc_attribute_label($attr);
+                $variationArray["attribute_label"] = $attribute_label;
+                
+                if (isset($attributes[$attr]) || isset($attributes['pa_' . $attr])) {
+                    $attribute = isset($attributes[$attr]) ? $attributes[$attr] : $attributes['pa_' . $attr];
+                    if ($attribute['is_taxonomy'] && $attribute['is_visible']) {
+                        $variationArray["attribute_name"] = $attribute['name'];
+                        $variationNames = array();
+
+                        foreach ($variations as $variation) {
+                            if (!empty($variation['attributes']['attribute_' . $attribute['name']])) {
+                                $__variations = array();
+
+                                $taxonomy = $attribute['name'];
+                                $meta = get_post_meta($variation['variation_id'], 'attribute_' . $taxonomy, true);
+                                $term = get_term_by('slug', $meta, $taxonomy);
+
+                                $__variations['variation_id'] = $variation['variation_id'];
+                                $__variations['variation_name'] = $term->name;
+                                $__variations['variation_price'] = $variation['display_regular_price'];
+                                
+                                $variationNames[] = $__variations;
+                            }
+                        }
+
+                        $variationArray["variations"] = $variationNames;
+                    }
+                }
+
+                $variationsArray[] = $variationArray;
+            }
+            
+            $product_variations = $variationsArray;
+        
         } else {
             $product->sale_price = $__product->get_sale_price();
             $product->price = $__product->get_regular_price();
         }
 
-        $product->available_variations = $variations;
+        $product->available_variations = $product_variations;
+        $product->attributes = $attributes;
 
         $image = wp_get_attachment_url(get_post_thumbnail_id($product_id));
         $product->image = $image ? $image : 'https://api.urbanshop.pk/wp-content/uploads/woocommerce-placeholder-150x150.png';
