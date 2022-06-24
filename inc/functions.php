@@ -677,6 +677,7 @@ function getAllAttributes(WP_REST_Request $request)
                 $list = (object) [];
                 $list->label = $tax->attribute_label;
                 $list->name = $tax->attribute_name;
+                $list->taxonomy = 'pa_' . $tax->attribute_name;
 
                 if (taxonomy_exists(wc_attribute_taxonomy_name($tax->attribute_name))) :
                     $list->options = get_terms(wc_attribute_taxonomy_name($tax->attribute_name), 'hide_empty=0');
