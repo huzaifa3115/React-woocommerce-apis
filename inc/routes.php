@@ -44,7 +44,7 @@ function register_api_hooks()
         'api',
         '/get_products_by_category/',
         array(
-            'methods' => 'GET',
+            'methods' => 'POST',
             'callback' => 'getProductsByCategory',
             'permission_callback' => function ($request) {
                 return true;

@@ -296,12 +296,12 @@ function getAllCategories()
 function getProductsByCategory(WP_REST_Request $request)
 {
     try {
-        $arg = $request->get_param('slug');
-        if (!$arg || $arg === "") {
+        $slug = $request->get_param('slug');
+        if (!$slug || $slug === "") {
             throw new Exception("Invalid Query");
         }
 
-        $category = get_term_by('slug', $arg, 'product_cat');
+        $category = get_term_by('slug', $slug, 'product_cat');
 
         $category = (object)$category;
 
@@ -317,12 +317,26 @@ function getProductsByCategory(WP_REST_Request $request)
                 array(
                     'taxonomy'      => 'product_cat',
                     'field' => 'slug',
-                    'terms'         => $arg,
+                    'terms'         => $slug,
                 ),
             )
         );
 
         // for filter
+        $filters = $request['filters'];
+        if ($filters && !empty($filters) && is_array($filters)) {
+            foreach ($filters as $filter_item) {
+                $item = array(
+                    'taxonomy'        => $filter_item['key'],
+                    'field'           => 'slug',
+                    'terms'           =>  $filter_item['filters'],
+                    'operator'        => 'IN',
+                );
+
+                $args['tax_query'][] = $item;
+            }
+        }
+
         $meta_query =  array();
         $price_filter = $request->get_param('price_filter');
         if (
