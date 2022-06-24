@@ -322,6 +322,49 @@ function getProductsByCategory(WP_REST_Request $request)
             )
         );
 
+        // for filter
+        $meta_query =  array();
+        $price_filter = $request->get_param('price_filter');
+        if (
+            $price_filter &&
+            !empty($price_filter)
+        ) {
+            $args['orderby'] = 'meta_value_num';
+            $args['meta_key'] = '_price';
+            $args['order'] = $price_filter === 'low' ? 'ASC' : 'DESC';
+        }
+
+        $price_to = $request->get_param('to');
+        $price_from = $request->get_param('from');
+
+        if (
+            $price_from &&
+            !empty($price_from)
+        ) {
+            $meta_query[]['relation'] = 'AND';
+            $meta_query[] = array(
+                'key'     => '_price',
+                'value'   => $price_from,
+                'compare' => '>=',
+                'type'    => 'NUMERIC'
+            );
+        }
+
+        if (
+            $price_to &&
+            !empty($price_to)
+        ) {
+            $meta_query[] = array(
+                'key'     => '_price',
+                'value'   => $price_to,
+                'compare' => '<=',
+                'type'    => 'NUMERIC'
+            );
+        }
+
+        $args['meta_query'] = $meta_query;
+        // for filter
+
         $filters = get_posts($args);
 
         $products = array();
@@ -524,15 +567,16 @@ function getProductsByKeyword(WP_REST_Request $request)
             throw new Exception("Invalid Query");
         }
 
-        $price_filter = $request->get_param('price_filter');
-
         $args = array(
             'post_type'             => 'product',
             'post_status'           => 'publish',
             'posts_per_page'        => -1,
-            's' => $query
+            's' => $query,
         );
 
+        // for filter
+        $meta_query =  array();
+        $price_filter = $request->get_param('price_filter');
         if (
             $price_filter &&
             !empty($price_filter)
@@ -541,6 +585,37 @@ function getProductsByKeyword(WP_REST_Request $request)
             $args['meta_key'] = '_price';
             $args['order'] = $price_filter === 'low' ? 'ASC' : 'DESC';
         }
+
+        $price_to = $request->get_param('to');
+        $price_from = $request->get_param('from');
+
+        if (
+            $price_from &&
+            !empty($price_from)
+        ) {
+            $meta_query[]['relation'] = 'AND';
+            $meta_query[] = array(
+                'key'     => '_price',
+                'value'   => $price_from,
+                'compare' => '>=',
+                'type'    => 'NUMERIC'
+            );
+        }
+
+        if (
+            $price_to &&
+            !empty($price_to)
+        ) {
+            $meta_query[] = array(
+                'key'     => '_price',
+                'value'   => $price_to,
+                'compare' => '<=',
+                'type'    => 'NUMERIC'
+            );
+        }
+
+        $args['meta_query'] = $meta_query;
+        // for filter
 
         $filters = get_posts($args);
 
@@ -565,6 +640,32 @@ function getProductsByKeyword(WP_REST_Request $request)
         }
 
         return new WP_REST_Response(array('status' => true, 'products' => $products));
+    } catch (Exception $e) {
+        return new WP_REST_Response(array('status' => false, 'message' => $e->getMessage()));
+    }
+}
+
+function getAllAttributes(WP_REST_Request $request)
+{
+    try {
+        $attribute_taxonomies = wc_get_attribute_taxonomies();
+        $taxonomy_terms = array();
+
+        if ($attribute_taxonomies) :
+            foreach ($attribute_taxonomies as $tax) :
+                $list = (object) [];
+                $list->label = $tax->attribute_label;
+                $list->name = $tax->attribute_name;
+
+                if (taxonomy_exists(wc_attribute_taxonomy_name($tax->attribute_name))) :
+                    $list->options = get_terms(wc_attribute_taxonomy_name($tax->attribute_name), 'hide_empty=0');
+                endif;
+
+                $taxonomy_terms[] = $list;
+            endforeach;
+        endif;
+
+        return new WP_REST_Response(array('status' => true, 'filters' => $taxonomy_terms));
     } catch (Exception $e) {
         return new WP_REST_Response(array('status' => false, 'message' => $e->getMessage()));
     }

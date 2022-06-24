@@ -99,5 +99,16 @@ function register_api_hooks()
             },
         )
     );
-    
+
+    register_rest_route(
+        'api',
+        '/get-attributes',
+        array(
+            'methods' => 'GET',
+            'callback' => 'getAllAttributes',
+            'permission_callback' => function ($request) {
+                return true;
+            },
+        )
+    );
 }
