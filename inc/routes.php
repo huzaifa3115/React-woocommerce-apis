@@ -90,7 +90,7 @@ function register_api_hooks()
 
     register_rest_route(
         'api',
-        '/product/query/',
+        '/products/',
         array(
             'methods' => 'GET',
             'callback' => 'getProductsByKeyword',

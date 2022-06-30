@@ -640,9 +640,9 @@ function getProductsByKeyword(WP_REST_Request $request)
 {
     try {
         $query = $request->get_param('query');
-        if (!$query || $query === "") {
-            throw new Exception("Invalid Query");
-        }
+        // if (!$query || $query === "") {
+        //     throw new Exception("Invalid Query");
+        // }
 
         $args = array(
             'post_type'             => 'product',
