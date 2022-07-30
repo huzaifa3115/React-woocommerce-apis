@@ -1,173 +1,4 @@
 <?php
-
-add_action('admin_menu', 'wp_rest_theme_settings');
-
-function wp_rest_theme_settings()
-{
-    add_menu_page(
-        'Theme Setting For App',
-        'Settings',
-        'manage_options',
-        'wprest-theme-settings',
-        'theme_setting_page_content',
-        'dashicons-star-half',
-        5
-    );
-}
-
-function theme_setting_page_content()
-{
-    echo '<div class="wrap">
-	<h1>App Settings</h1>
-	<form method="post" action="options.php">';
-
-    settings_fields('wp_rest_theme_setting_custom');
-    do_settings_sections('wprest-theme-setting');
-    submit_button();
-
-    echo '</form></div>';
-}
-
-add_action('admin_init', 'wprest_register_setting');
-
-function wprest_register_setting()
-{
-    register_setting(
-        'wp_rest_theme_setting_custom',
-        'contact_number',
-        'sanitize_text_field'
-    );
-
-    register_setting(
-        'wp_rest_theme_setting_custom',
-        'contact_email',
-        'sanitize_text_field'
-    );
-
-    register_setting(
-        'wp_rest_theme_setting_custom',
-        'contact_address',
-        'sanitize_text_field'
-    );
-
-    register_setting(
-        'wp_rest_theme_setting_custom',
-        'footer_text',
-        'sanitize_text_field'
-    );
-
-    add_settings_section(
-        'some_settings_section_id',
-        'Theme Settings For App',
-        '',
-        'wprest-theme-setting'
-    );
-
-    add_settings_field(
-        'contact_number',
-        'Contact Number',
-        'contact_number_html',
-        'wprest-theme-setting',
-        'some_settings_section_id',
-        array(
-            'label_for' => 'contact_number',
-        )
-    );
-
-    add_settings_field(
-        'contact_email',
-        'Contact Email',
-        'contact_email_html',
-        'wprest-theme-setting',
-        'some_settings_section_id',
-        array(
-            'label_for' => 'contact_email',
-        )
-    );
-
-    add_settings_field(
-        'contact_address',
-        'Address',
-        'contact_address_html',
-        'wprest-theme-setting',
-        'some_settings_section_id',
-        array(
-            'label_for' => 'contact_address',
-        )
-    );
-
-    add_settings_field(
-        'footer_text',
-        'Footer Text',
-        'footer_text_html',
-        'wprest-theme-setting',
-        'some_settings_section_id',
-        array(
-            'label_for' => 'footer_text',
-        )
-    );
-}
-
-function sell_process_html()
-{
-    $text = get_option('sell_process');
-
-    printf(
-        '<input type="text" id="sell_process" name="sell_process" value="%s" />',
-        esc_attr($text)
-    );
-}
-
-function sell_your_page_html()
-{
-    $text = get_option('sell_your_page');
-
-    printf(
-        '<input type="text" id="sell_your_page" name="sell_your_page" value="%s" />',
-        esc_attr($text)
-    );
-}
-
-function contact_number_html()
-{
-    $text = get_option('contact_number');
-
-    printf(
-        '<input type="text" id="contact_number" name="contact_number" value="%s" />',
-        esc_attr($text)
-    );
-}
-
-function contact_email_html()
-{
-    $text = get_option('contact_email');
-
-    printf(
-        '<input type="text" id="contact_email" name="contact_email" value="%s" />',
-        esc_attr($text)
-    );
-}
-
-function contact_address_html()
-{
-    $text = get_option('contact_address');
-
-    printf(
-        '<textarea id="contact_address" name="contact_address">%s</textarea>',
-        esc_attr($text)
-    );
-}
-
-function footer_text_html()
-{
-    $text = get_option('footer_text');
-
-    printf(
-        '<input type="text" id="footer_text" name="footer_text" value="%s" />',
-        esc_attr($text)
-    );
-}
-
 function generateRandomString($length = 10)
 {
     $characters = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
@@ -485,10 +316,10 @@ function getProductsDetail(WP_REST_Request $request)
             $variationsArray = array();
             foreach ($attributes as $attr => $attr_deets) {
                 $variationArray = array();
-                
+
                 $attribute_label = wc_attribute_label($attr);
                 $variationArray["attribute_label"] = $attribute_label;
-                
+
                 if (isset($attributes[$attr]) || isset($attributes['pa_' . $attr])) {
                     $attribute = isset($attributes[$attr]) ? $attributes[$attr] : $attributes['pa_' . $attr];
                     if ($attribute['is_taxonomy'] && $attribute['is_visible']) {
@@ -506,7 +337,7 @@ function getProductsDetail(WP_REST_Request $request)
                                 $__variations['variation_id'] = $variation['variation_id'];
                                 $__variations['variation_name'] = $term->name;
                                 $__variations['variation_price'] = $variation['display_regular_price'];
-                                
+
                                 $variationNames[] = $__variations;
                             }
                         }
@@ -517,9 +348,8 @@ function getProductsDetail(WP_REST_Request $request)
 
                 $variationsArray[] = $variationArray;
             }
-            
+
             $product_variations = $variationsArray;
-        
         } else {
             $product->sale_price = $__product->get_sale_price();
             $product->price = $__product->get_regular_price();
@@ -652,6 +482,20 @@ function getProductsByKeyword(WP_REST_Request $request)
         );
 
         // for filter
+        $filters = $request['filters'];
+        if ($filters && !empty($filters) && is_array($filters)) {
+            foreach ($filters as $filter_item) {
+                $item = array(
+                    'taxonomy'        => $filter_item['key'],
+                    'field'           => 'slug',
+                    'terms'           =>  $filter_item['filters'],
+                    'operator'        => 'IN',
+                );
+
+                $args['tax_query'][] = $item;
+            }
+        }
+
         $meta_query =  array();
         $price_filter = $request->get_param('price_filter');
         if (
